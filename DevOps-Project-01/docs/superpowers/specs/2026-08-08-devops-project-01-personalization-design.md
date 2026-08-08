@@ -42,6 +42,7 @@ Repo hiện tại là bản sao của project DevOps-Project-01 do Harshhaa / No
 | B2 | **Ứng dụng không bao giờ được cài.** `user_data` cài Tomcat nhưng không deploy file WAR nào | `modules/asg/main.tf:11-19` |
 | B3 | **Health check chắc chắn thất bại.** ALB kiểm tra `/` và chờ HTTP 200, nhưng app dùng Spring Security nên trả 302 redirect → mọi instance unhealthy vĩnh viễn | `modules/alb/main.tf:29` |
 | B4 | `aws_eip.vpc = true` đã bị gỡ bỏ ở AWS provider 5.x (phải dùng `domain = "vpc"`) | `modules/vpc/main.tf:55` |
+| B5 | **Khai báo output trùng lặp.** Ba file `variables.tf` chứa nguyên các khối `output` đã có trong `outputs.tf` cùng thư mục. Terraform gộp mọi file `.tf` trong một thư mục nên đây là lỗi `Duplicate output definition` → `terraform validate` chết ngay | `modules/alb/variables.tf:23-36`, `modules/asg/variables.tf:53-56`, `modules/rds/variables.tf:41-56` |
 
 ### Lỗi bảo mật
 
@@ -53,6 +54,9 @@ Repo hiện tại là bản sao của project DevOps-Project-01 do Harshhaa / No
 | S4 | Không có IAM instance profile → không dùng được SSM, CloudWatch agent không có quyền gửi log | `modules/asg/main.tf:3-32` |
 | S5 | Tạo security group cho bastion nhưng **không tồn tại bastion instance nào** — code chết, mâu thuẫn với README | `modules/security/main.tf:96` |
 | S6 | Backend S3 bị comment toàn bộ → state nằm ở máy local, không có lock, mất máy là mất quyền kiểm soát hạ tầng | `infrastructure/main.tf:12-17` |
+| S7 | **SQL Injection.** Nối chuỗi thẳng vào câu SQL ở cả luồng đăng nhập lẫn đăng ký. Gõ `' OR '1'='1` là vào thẳng | `login.java:39`, `register.java:45` |
+| S8 | **Mật khẩu người dùng lưu plaintext** trong bảng `Employee` — không băm, dù `spring-boot-starter-security` đã có sẵn trong `pom.xml` | `register.java:45` |
+| S9 | **`settings.xml` chứa credentials JFrog của tác giả gốc** (email + mật khẩu + URL instance). Đây là thông tin đăng nhập của người khác, tuyệt đối không được đẩy lên repo public | `Java-Login-App/settings.xml:6-13` |
 
 ### Lỗi vận hành và chi phí
 
@@ -66,6 +70,7 @@ Repo hiện tại là bản sao của project DevOps-Project-01 do Harshhaa / No
 | O6 | AWS provider ghim `~> 4.0`, lạc hậu hai major version | `infrastructure/main.tf:8` |
 | O7 | Không có khối `instance_refresh` → không có cơ chế rollout | `modules/asg/main.tf:34-61` |
 | O8 | README mô tả thư mục `environments/dev,prod` không tồn tại; toàn bộ hướng dẫn là lệnh AWS CLI thủ công, không khớp với Terraform bên dưới | `README.md`, `infrastructure/README.md:43-45` |
+| O9 | **Sai tên bảng.** README hướng dẫn tạo bảng `users` với cột `id/username/password/email/created_at`, nhưng code truy vấn bảng `Employee` với cột `first_name/last_name/email/username/password/regdate`. Làm theo README thì app chết ngay | `README.md:245-251` vs `register.java:45` |
 
 ---
 
@@ -166,9 +171,12 @@ DevOps-Project-01/
 
 Giữ nguyên chức năng login/register. Ba thay đổi:
 
-1. **Xoá credentials hardcode** (S1). Cấu hình DB đọc từ biến môi trường do user-data bơm vào sau khi lấy secret từ Secrets Manager.
-2. **Thêm Spring Boot Actuator**, mở đúng endpoint `/actuator/health`, cấu hình Spring Security cho phép truy cập ẩn danh endpoint này. ALB health check trỏ vào đây (sửa B3).
-3. **Thêm Flyway migration** tạo bảng `users` và các index, thay cho việc chạy SQL bằng tay như README gốc hướng dẫn.
+1. **Xoá credentials hardcode** (S1) và **xoá hẳn `settings.xml`** (S9) — dự án dùng GitHub Actions chứ không dùng JFrog. Cấu hình DB đọc từ biến môi trường do user-data bơm vào sau khi lấy secret từ Secrets Manager.
+2. **Sửa SQL Injection** (S7): thay nối chuỗi bằng `PreparedStatement` với tham số ràng buộc. **Băm mật khẩu** bằng `BCryptPasswordEncoder` (S8) — `spring-boot-starter-security` đã có sẵn trong `pom.xml`.
+3. **Thêm Spring Boot Actuator**, mở đúng endpoint `/actuator/health`, cấu hình Spring Security cho phép truy cập ẩn danh endpoint này. ALB health check trỏ vào đây (sửa B3).
+4. **Thêm Flyway migration** tạo bảng **`Employee`** đúng theo cột mà code thực sự dùng — `first_name`, `last_name`, `email`, `username`, `password`, `regdate` — chứ không phải bảng `users` như README gốc mô tả sai (O9).
+
+Việc SonarCloud bắt được SQLi ở lần quét đầu tiên, rồi bạn sửa và quét lại thấy sạch, là một bằng chứng DevSecOps đáng chụp ảnh trước–sau.
 
 ---
 
@@ -342,7 +350,7 @@ Project được coi là xong khi thoả **toàn bộ** các điều kiện sau:
 
 1. Từ repo sạch, chạy `terraform apply` rồi `deploy.yml` → ứng dụng hoạt động trong **dưới 20 phút**, **không một thao tác thủ công nào**.
 2. **Không có secret nào** trong repo lẫn trong state file.
-3. Toàn bộ 18 lỗi ở mục 2 đã được sửa và ghi lại trong README.
+3. Toàn bộ 23 lỗi ở mục 2 đã được sửa và ghi lại trong README.
 4. CI xanh; `tflint` và `checkov` chạy trong pipeline.
 5. Thu đủ năm loại bằng chứng trong `docs/evidence/`: video demo, ảnh dashboard, ảnh phiên SSM, ảnh PR có plan comment, bảng chi phí.
 6. `ATTRIBUTION.md` ghi rõ nguồn gốc và ranh giới đóng góp.
