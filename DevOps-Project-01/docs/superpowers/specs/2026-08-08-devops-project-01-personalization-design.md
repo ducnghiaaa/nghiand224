@@ -23,6 +23,7 @@ Repo hiện tại là bản sao của project DevOps-Project-01 do Harshhaa / No
 | Ứng dụng | Giữ Java Spring Boot, dọn sạch — không viết app mới |
 | CI/CD | GitHub Actions, xác thực bằng OIDC |
 | Kiến trúc deploy | EC2 + ASG + AMI bất biến build bằng Packer |
+| Vị trí repo | Không tách repo riêng. Nằm trong `ducnghiaaa/nghiand224`, trên nhánh `projects/devops`; `main` chỉ chứa README index (xem mục 3.2) |
 | Vòng đời | **Không chạy 24/7.** Portfolio thể hiện qua repo, lịch sử CI, ảnh và video |
 
 **Chi phí thực tế ước tính:** ~$0,10/giờ khi hạ tầng sống (ALB $0,0225 + 1 NAT Gateway $0,045 + RDS t3.micro $0,017 + 2× EC2 t3.micro $0,021). Với 8 giờ/tuần → **≈$3,5/tháng**. Ngân sách không phải là rủi ro; **quên `destroy` mới là rủi ro**.
@@ -101,7 +102,35 @@ Kết quả: **không còn secret nào trong repo lẫn trong state file**.
 
 - *SAA-C03:* Domain 1 — Secrets Manager so với Parameter Store, mã hoá at-rest.
 
-### 3.2 Cấu trúc thư mục đích
+### 3.2 Chiến lược repo và nhánh
+
+Project này **không có repo GitHub riêng**. Nó nằm trong repo tổng hợp portfolio `ducnghiaaa/nghiand224`, theo mô hình **mỗi project một nhánh**:
+
+| Nhánh | Nội dung |
+| --- | --- |
+| `main` (default) | Chỉ có `README.md` — trang portfolio liệt kê mọi project kèm link |
+| `projects/devops` | Toàn bộ project này |
+| *(sau này)* `projects/<tên>` | Các project khác |
+
+Link từ README ở `main`:
+
+```markdown
+- [DevOps Project 01 — 3-Tier Java trên AWS](https://github.com/ducnghiaaa/nghiand224/tree/projects/devops/DevOps-Project-01)
+```
+
+GitHub sẽ render `README.md` nằm trong thư mục đó ngay khi bấm vào.
+
+**Hệ quả cần xử lý (đã cân nhắc và chấp nhận):**
+
+1. **Badge CI phải chỉ định nhánh.** Cú pháp:
+   `![CI](https://github.com/ducnghiaaa/nghiand224/actions/workflows/ci.yml/badge.svg?branch=projects/devops)`
+2. **Luồng PR nhắm vào `projects/devops`, không phải `main`.** Làm việc trên nhánh `feat/<tên>`, mở PR vào `projects/devops`. `terraform-plan.yml` cấu hình `pull_request: branches: [projects/devops]`.
+3. **Workflow phải nằm ở `.github/workflows/` trên chính nhánh `projects/devops`.** Sự kiện `push` và `pull_request` đọc định nghĩa workflow từ nhánh liên quan, nên cách này chạy đúng. Riêng `workflow_dispatch` chỉ hiện trên giao diện Actions nếu file workflow tồn tại ở **default branch**, do đó `infra-apply.yml` và `deploy.yml` sẽ dùng cách kích hoạt bằng `gh workflow run --ref projects/devops` từ dòng lệnh, hoặc đồng bộ một bản copy của hai file này sang `main`. **Chốt: dùng `gh workflow run --ref`**, đơn giản hơn và không phải giữ hai bản đồng bộ.
+4. **Thống kê ngôn ngữ và code search của repo chỉ tính `main`** → repo sẽ hiện "Markdown 100%". Đây là đánh đổi đã biết và chấp nhận; bù lại bằng README index viết kỹ.
+
+### 3.3 Cấu trúc thư mục đích
+
+Bên trong nhánh `projects/devops`:
 
 ```
 DevOps-Project-01/
@@ -133,7 +162,7 @@ DevOps-Project-01/
     └── deploy.yml
 ```
 
-### 3.3 Thay đổi ở tầng ứng dụng
+### 3.4 Thay đổi ở tầng ứng dụng
 
 Giữ nguyên chức năng login/register. Ba thay đổi:
 
@@ -145,9 +174,11 @@ Giữ nguyên chức năng login/register. Ba thay đổi:
 
 ## 4. CI/CD
 
-Bốn workflow, tách bạch trách nhiệm.
+Bốn workflow, tách bạch trách nhiệm. Tất cả nằm ở `.github/workflows/` **trên nhánh `projects/devops`**, và mọi trigger đều nhắm vào nhánh đó chứ không phải `main` (xem mục 3.2).
 
 ### 4.1 `ci.yml` — chạy trên mọi push và pull request
+
+Trigger: `push: branches: [projects/devops, 'feat/**']` và `pull_request: branches: [projects/devops]`.
 
 Không đụng tới AWS, không tốn tiền, luôn nhìn thấy được:
 
@@ -160,11 +191,16 @@ Không đụng tới AWS, không tốn tiền, luôn nhìn thấy được:
 
 ### 4.2 `terraform-plan.yml` — chạy trên pull request
 
+Trigger: `pull_request: branches: [projects/devops]`.
+
 Chạy `terraform plan` rồi **bot comment kết quả plan vào PR**. Đây là quy trình thật ở doanh nghiệp và là chi tiết gây ấn tượng mạnh.
 
 ### 4.3 `infra-apply.yml` — kích hoạt bằng tay
 
 `workflow_dispatch` với input `action: apply | destroy`, gắn `environment: dev` yêu cầu phê duyệt thủ công. **Không bao giờ auto-apply hạ tầng.**
+
+Vì file nằm ngoài default branch, kích hoạt bằng:
+`gh workflow run infra-apply.yml --ref projects/devops -f action=apply`
 
 ### 4.4 `deploy.yml` — kích hoạt bằng tay
 
@@ -176,24 +212,35 @@ Chạy `terraform plan` rồi **bot comment kết quả plan vào PR**. Đây l�
 
 ### 4.5 Xác thực: OIDC, không dùng access key
 
-GitHub Actions assume một IAM role qua OpenID Connect. Trust policy giới hạn đúng repo và đúng branch. **Không có access key nào trong GitHub Secrets.**
+GitHub Actions assume một IAM role qua OpenID Connect. **Không có access key nào trong GitHub Secrets.**
+
+**Hai role, hai mức quyền** — vì `terraform plan` chạy từ PR của nhánh `feat/**` cũng cần đọc AWS, nhưng tuyệt đối không được có quyền ghi:
+
+| Role | Điều kiện `sub` trong trust policy | Quyền |
+| --- | --- | --- |
+| `gha-terraform-plan` | `repo:ducnghiaaa/nghiand224:pull_request` | Chỉ đọc (`ReadOnlyAccess` + ghi state lock) |
+| `gha-terraform-apply` | `repo:ducnghiaaa/nghiand224:ref:refs/heads/projects/devops` | Quyền tạo/sửa/xoá hạ tầng |
+
+Điểm mấu chốt: token của sự kiện `pull_request` mang `sub` là `...:pull_request`, **không** phải `...:ref:refs/heads/<nhánh>`. Nếu chỉ khai báo một role theo `ref:` thì `terraform-plan.yml` sẽ thất bại với lỗi `AssumeRoleWithWebIdentity` — đây là lỗi rất hay gặp khi mới dùng OIDC.
+
+`ci.yml` không assume role nào cả vì nó không đụng tới AWS.
 
 Đây là điểm bảo mật đáng nói nhất trong toàn project và trùng khớp SAA-C03 Domain 1 (IAM, STS, trust policy).
 
 ### 4.6 Luồng đầy đủ
 
 ```
-git push  →  ci.yml (test, quét, đóng gói WAR)
-                ↓
-PR        →  terraform-plan.yml (bot comment plan)
-                ↓ merge
-bấm tay   →  infra-apply.yml (action=apply)  →  hạ tầng lên
-                ↓
-bấm tay   →  deploy.yml  →  Packer bake  →  instance refresh  →  health check
-                ↓
-             THU THẬP BẰNG CHỨNG (ảnh / video / số liệu chi phí)
-                ↓
-bấm tay   →  infra-apply.yml (action=destroy)  →  về $0
+nhánh feat/<tên>  →  ci.yml (test, quét, đóng gói WAR)
+                        ↓
+PR vào projects/devops  →  terraform-plan.yml (bot comment plan)
+                        ↓ merge vào projects/devops
+gh workflow run   →  infra-apply.yml (action=apply)  →  hạ tầng lên
+                        ↓
+gh workflow run   →  deploy.yml  →  Packer bake  →  instance refresh  →  health check
+                        ↓
+                     THU THẬP BẰNG CHỨNG (ảnh / video / số liệu chi phí)
+                        ↓
+gh workflow run   →  infra-apply.yml (action=destroy)  →  về $0
 ```
 
 ---
@@ -216,10 +263,17 @@ Mỗi tuần là một giai đoạn **độc lập, dừng lại được**, và
 
 ### Tuần 0 — Nền móng an toàn (1-2 giờ)
 
-- Viết `ATTRIBUTION.md`: ghi rõ project bắt nguồn từ repo của NotHarshhaa, liệt kê phần tự làm. *Trung thực về nguồn gốc là điểm cộng; giấu đi mà bị phát hiện là điểm trừ chí mạng.*
-- Tài khoản AWS: bật MFA, tạo IAM user riêng thay cho root, đặt AWS Budget alert ở mức $20 và $30.
-- Thêm `.gitignore` cho `*.tfstate*`, `*.tfvars`, `.terraform/`.
-- Xoá credentials khỏi `application.properties` (S1).
+**Đưa code vào git.** Hiện toàn bộ `DevOps-Project-01/` đang untracked; nhánh `projects/devops` mới chỉ có tài liệu thiết kế này. Thứ tự bắt buộc:
+
+1. Viết `.gitignore` **trước** (`*.tfstate*`, `*.tfvars`, `.terraform/`, `target/`, `.DS_Store`).
+2. Xoá credentials khỏi `application.properties` (S1) **trước khi commit lần đầu** — commit rồi mới xoá thì secret vẫn nằm vĩnh viễn trong lịch sử git.
+3. Commit toàn bộ project vào `projects/devops`, push lên origin.
+
+**Viết README index ở nhánh `main`.** Một file duy nhất, liệt kê các project kèm link theo mục 3.2. Đây là trang đầu tiên nhà tuyển dụng nhìn thấy nên viết cẩn thận: mỗi project một dòng mô tả một câu về vấn đề đã giải quyết, không phải liệt kê tên công nghệ.
+
+**Viết `ATTRIBUTION.md`** trong `DevOps-Project-01/`: ghi rõ project bắt nguồn từ repo của NotHarshhaa (ProDevOpsGuy), liệt kê phần bạn tự làm. *Trung thực về nguồn gốc là điểm cộng; giấu đi mà bị phát hiện là điểm trừ chí mạng.*
+
+**Tài khoản AWS:** bật MFA, tạo IAM user riêng thay cho root, đặt AWS Budget alert ở mức $20 và $30.
 
 **Bằng chứng:** ảnh chụp cấu hình Budget alert.
 
@@ -292,6 +346,7 @@ Project được coi là xong khi thoả **toàn bộ** các điều kiện sau:
 4. CI xanh; `tflint` và `checkov` chạy trong pipeline.
 5. Thu đủ năm loại bằng chứng trong `docs/evidence/`: video demo, ảnh dashboard, ảnh phiên SSM, ảnh PR có plan comment, bảng chi phí.
 6. `ATTRIBUTION.md` ghi rõ nguồn gốc và ranh giới đóng góp.
+7. `main` có README index, link dẫn thẳng vào project và **đã bấm thử thấy README project hiện ra đúng**.
 
 ---
 
