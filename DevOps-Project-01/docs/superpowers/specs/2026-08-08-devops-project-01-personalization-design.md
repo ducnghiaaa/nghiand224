@@ -185,7 +185,22 @@ Giữ nguyên chức năng login/register. Bốn thay đổi:
 1. **Xoá credentials khỏi source** (S1) và **xoá `settings.xml`** (S9) — dự án dùng GitHub Actions chứ không dùng JFrog. Cấu hình DB đọc từ biến môi trường do user-data bơm vào sau khi lấy secret từ Secrets Manager.
 2. **Sửa SQL Injection** (S7): thay nối chuỗi bằng `PreparedStatement` với tham số ràng buộc. **Băm mật khẩu** bằng `BCryptPasswordEncoder` (S8) — `spring-boot-starter-security` đã có sẵn trong `pom.xml`.
 3. **Thêm Spring Boot Actuator**, mở đúng endpoint `/actuator/health`, cấu hình Spring Security cho phép truy cập ẩn danh endpoint này. ALB health check trỏ vào đây (sửa B3).
-4. **Thêm Flyway migration** tạo bảng **`Employee`** đúng theo cột mà code thực sự dùng — `first_name`, `last_name`, `email`, `username`, `password`, `regdate` (O9).
+4. **Thêm Flyway migration** tạo bảng **`Employee`** (O9). Schema đúng — lấy từ `Java-Login-App/README.md`, khớp với câu truy vấn trong `login.java` và `register.java`:
+
+```sql
+CREATE TABLE Employee (
+  id         int unsigned auto_increment not null,
+  first_name varchar(250),
+  last_name  varchar(250),
+  email      varchar(250),
+  username   varchar(250),
+  password   varchar(250),
+  regdate    timestamp,
+  primary key (id)
+);
+```
+
+Migration nên siết thêm so với bản này: `username` và `email` phải `NOT NULL UNIQUE`, và `password` nới lên `varchar(60)` trở lên cho vừa chuỗi băm BCrypt. Sau khi có migration, xoá `Java-Login-App/README.md` vì nội dung đã được mã hoá thành code.
 
 SonarCloud bắt được SQLi ở lần quét đầu tiên, bạn sửa rồi quét lại thấy sạch — đó là một bằng chứng DevSecOps đáng chụp ảnh trước và sau.
 
