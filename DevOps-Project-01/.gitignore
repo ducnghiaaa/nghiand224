@@ -1,0 +1,41 @@
+# ---- Terraform ----
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Chan moi tfvars theo mac dinh, chi mo ngoai le cho file moi truong
+# (cac file nay da duoc ra soat va KHONG duoc phep chua secret)
+*.tfvars
+*.tfvars.json
+!infrastructure/envs/*/*.tfvars
+
+# ---- Packer ----
+packer_cache/
+*.pkrvars.hcl
+
+# ---- Java / Maven ----
+target/
+*.class
+*.war
+*.jar
+
+# ---- Maven settings (co the chua credential) ----
+settings.xml
+
+# ---- IDE ----
+.idea/
+*.iml
+.vscode/
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
