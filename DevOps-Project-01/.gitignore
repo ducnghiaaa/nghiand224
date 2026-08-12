@@ -1,3 +1,13 @@
+# ---- Secret: KHONG BAO GIO commit ----
+.secret/
+**/.secret/
+*.pem
+*.key
+credentials
+.env
+.env.*
+!.env.example
+
 # ---- Terraform ----
 **/.terraform/*
 *.tfstate

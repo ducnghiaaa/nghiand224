@@ -1,2 +1,16 @@
+# ---- Secret: KHONG BAO GIO commit ----
+# Thu muc nay chua credential, access key, ghi chu nhay cam.
+# Ba lop bao ve: gitignore nay, gitignore trong tung project,
+# va hook pre-commit o .git/hooks/pre-commit
+.secret/
+**/.secret/
+*.pem
+*.key
+credentials
+.env
+.env.*
+!.env.example
+
+# ---- OS ----
 .DS_Store
 Thumbs.db

@@ -1,0 +1,57 @@
+#!/bin/bash
+#
+# Chan commit chua credential.
+#
+# .gitignore KHONG ngan duoc "git add -f". Hook nay ngan.
+# Muon bo qua trong truong hop dac biet: git commit --no-verify
+#
+set -uo pipefail
+
+fail=0
+red() { printf '\033[31m%s\033[0m\n' "$1"; }
+
+# --- 1. Chan moi file nam trong thu muc .secret/ ---
+secret_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '(^|/)\.secret/' || true)
+if [ -n "$secret_files" ]; then
+  red "CHAN COMMIT: co file nam trong .secret/"
+  echo "$secret_files" | sed 's/^/    /'
+  fail=1
+fi
+
+# --- 2. Chan file khoa rieng / chung chi ---
+key_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(pem|key|p12|pfx)$' || true)
+if [ -n "$key_files" ]; then
+  red "CHAN COMMIT: co file khoa rieng hoac chung chi"
+  echo "$key_files" | sed 's/^/    /'
+  fail=1
+fi
+
+# --- 3. Quet noi dung dang them vao, tim dau vet credential ---
+added=$(git diff --cached -U0 --diff-filter=ACM | grep '^+' | grep -v '^+++' || true)
+
+scan() {
+  local pattern="$1" label="$2"
+  local hit
+  # "--" bat buoc: mau PEM bat dau bang "-----" se bi grep hieu nham la tham so
+  hit=$(printf '%s\n' "$added" | grep -nE -- "$pattern" || true)
+  if [ -n "$hit" ]; then
+    red "CHAN COMMIT: $label"
+    printf '%s\n' "$hit" | head -5 | sed 's/^/    /'
+    fail=1
+  fi
+}
+
+scan 'A(KIA|SIA)[0-9A-Z]{16}'              "co ID access key cua AWS"
+scan 'aws_secret_access_key[[:space:]]*=[[:space:]]*[^[:space:]]' "co aws_secret_access_key"
+scan '-----BEGIN[[:space:]].*PRIVATE KEY-----' "co khoa rieng dang PEM"
+scan 'xox[baprs]-[0-9A-Za-z-]{10,}'        "co token Slack"
+scan 'gh[pousr]_[0-9A-Za-z]{36}'           "co token GitHub"
+
+if [ "$fail" -ne 0 ]; then
+  echo
+  red "Commit bi tu choi. Go bo phan tren ra khoi staging roi thu lai."
+  echo "Neu chac chan la bao dong gia: git commit --no-verify"
+  exit 1
+fi
+
+exit 0
