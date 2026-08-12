@@ -456,29 +456,73 @@ Kỳ vọng: một dòng `monthly-30-usd` với limit `30`.
 
 - [ ] **Bước 8: Cài các công cụ còn thiếu**
 
-```bash
-brew install packer tflint
-brew install openjdk@11 maven
-brew install checkov
-```
+**Cài từng gói một, không gộp.** `brew install a b c` là all-or-nothing ở khâu phân giải tên: một gói không tìm thấy thì cả lệnh dừng và những gói sau không được thử.
 
-Sau khi cài `openjdk@11`, cần liên kết để `java` nhận được:
+Ba gói có sẵn trong homebrew-core:
 
 ```bash
-sudo ln -sfn /opt/homebrew/opt/openjdk@11/libexec/openjdk.jdk \
-             /Library/Java/JavaVirtualMachines/openjdk-11.jdk
-```
-
-- [ ] **Bước 9: Xác minh toàn bộ công cụ**
-
-```bash
-for c in terraform aws packer java mvn gh tflint checkov docker; do
-  printf "%-10s " "$c"
-  command -v "$c" >/dev/null 2>&1 && ($c --version 2>&1 | head -1) || echo "CHUA CAI"
+for f in checkov openjdk@11 maven; do
+  brew install "$f" && echo "$f: OK" || echo "$f: THAT BAI"
 done
 ```
 
-Kỳ vọng: cả chín dòng đều in ra phiên bản, không dòng nào `CHUA CAI`.
+`packer` và `tflint` **không có trong homebrew-core** — chỉ có trong tap của chính nhà phát hành, và Homebrew bản mới bắt buộc `brew trust` trước khi cài, vì formula trong tap là mã Ruby chạy được lệnh tuỳ ý lúc cài:
+
+```bash
+brew tap hashicorp/tap
+brew tap terraform-linters/tap
+brew trust hashicorp/tap
+brew trust terraform-linters/tap
+
+brew install hashicorp/tap/packer
+brew install terraform-linters/tap/tflint
+```
+
+**Ghim Java 11 — bước bắt buộc, không phải tuỳ chọn.**
+
+`brew install maven` kéo theo `openjdk` bản mới nhất (hiện là 26) làm phụ thuộc. Không ghim thì Maven sẽ dùng Java 26 để build một project nhắm Java 11, và lỗi sinh ra rất khó lần.
+
+Thêm khối này vào `~/.zshrc` (không cần `sudo`, và dễ gỡ hơn symlink vào `/Library/Java/JavaVirtualMachines`):
+
+```bash
+cp ~/.zshrc ~/.zshrc.bak-$(date +%Y%m%d-%H%M%S)
+
+cat >> ~/.zshrc <<'EOF'
+
+# ===== DevOps-Project-01 =====
+export JAVA_HOME="/opt/homebrew/opt/openjdk@11"
+export PATH="$JAVA_HOME/bin:$PATH"
+export AWS_PROFILE=nghia-dev
+# ===== het DevOps-Project-01 =====
+EOF
+```
+
+**Cẩn thận khi đọc kết quả:** đừng nối `brew install` qua `| tail` hay kết thúc script bằng `echo`. Exit code của pipeline là exit code của lệnh cuối, nên brew hỏng vẫn báo thành công. Dùng `set -o pipefail` hoặc kiểm tra `$?` ngay sau lệnh.
+
+- [ ] **Bước 9: Xác minh toàn bộ công cụ**
+
+**Phải chạy trong shell tương tác.** Zsh chỉ nạp `~/.zshrc` cho shell tương tác, nên `zsh -lc` (login nhưng không tương tác) sẽ báo `JAVA_HOME` và `AWS_PROFILE` rỗng dù cấu hình hoàn toàn đúng. Dùng `zsh -ic`, hoặc mở terminal mới rồi gõ tay:
+
+```bash
+zsh -ic '
+for c in terraform aws packer java mvn gh tflint checkov docker; do
+  printf "%-11s " "$c"
+  command -v "$c" >/dev/null 2>&1 && ($c --version 2>&1 | head -1) || echo "CHUA CAI"
+done
+echo "JAVA_HOME   = $JAVA_HOME"
+echo "AWS_PROFILE = $AWS_PROFILE"
+mvn -version 2>&1 | grep -i "Java version"
+aws sts get-caller-identity --query "[Account,Arn]" --output text
+'
+```
+
+Kỳ vọng:
+- Cả chín công cụ in ra phiên bản, không dòng nào `CHUA CAI`
+- `JAVA_HOME` trỏ tới `openjdk@11`
+- **`mvn -version` báo `Java version: 11.x`** — nếu ra 26 thì khối `~/.zshrc` chưa có tác dụng, đừng build gì cho tới khi sửa xong
+- `aws sts get-caller-identity` trả về ARN của `terraform-dev`
+
+**Dọn profile `[default]` nếu nó chứa credential cũ.** `AWS_PROFILE` trong `~/.zshrc` chỉ có tác dụng ở shell tương tác; script chạy qua cron, CI hay một số IDE sẽ rơi về `[default]` và lỗi `InvalidClientTokenId`. Kiểm tra bằng `aws sts get-caller-identity --profile default`.
 
 - [ ] **Bước 10: Lưu bằng chứng**
 
