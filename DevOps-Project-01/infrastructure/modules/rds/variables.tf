@@ -25,14 +25,22 @@ variable "db_name" {
   type        = string
 }
 
+# Master username khong phai secret. Mat khau do RDS tu quan ly qua
+# Secrets Manager (manage_master_user_password), nen module nay khong nhan
+# bien mat khau nao ca.
 variable "db_username" {
-  description = "Database username"
+  description = "Master username cua RDS"
   type        = string
-  sensitive   = true
 }
 
-variable "db_password" {
-  description = "Database password"
+variable "instance_class" {
+  description = "Loai instance cho RDS"
   type        = string
-  sensitive   = true
+  default     = "db.t3.micro"
+}
+
+variable "multi_az" {
+  description = "Bat Multi-AZ. Tang gap doi chi phi, chi bat khi can chung minh HA."
+  type        = bool
+  default     = false
 }

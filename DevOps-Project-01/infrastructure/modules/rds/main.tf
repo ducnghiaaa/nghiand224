@@ -15,7 +15,8 @@ resource "aws_db_instance" "main" {
 
   engine         = "mysql"
   engine_version = "8.0"
-  instance_class = "db.t3.micro"
+  instance_class = var.instance_class
+  multi_az       = var.multi_az
 
   allocated_storage     = 20
   max_allocated_storage = 100
@@ -24,7 +25,10 @@ resource "aws_db_instance" "main" {
 
   db_name  = var.db_name
   username = var.db_username
-  password = var.db_password
+
+  # RDS tu sinh mat khau, luu vao Secrets Manager va tu xoay vong.
+  # Nho vay khong co mat khau nao trong tfvars, trong state, hay trong repo.
+  manage_master_user_password = true
 
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = var.security_group_ids

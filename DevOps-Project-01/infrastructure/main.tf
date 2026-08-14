@@ -59,7 +59,8 @@ module "rds" {
   security_group_ids = [module.security.db_security_group_id]
   db_name            = var.db_name
   db_username        = var.db_username
-  db_password        = var.db_password
+  instance_class     = var.db_instance_class
+  multi_az           = var.db_multi_az
 }
 
 # Application Load Balancer Module

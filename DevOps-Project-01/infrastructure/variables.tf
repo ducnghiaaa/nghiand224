@@ -41,15 +41,21 @@ variable "db_name" {
 }
 
 variable "db_username" {
-  description = "Database master username"
+  description = "Master username cua RDS. Khong phai secret - mat khau do RDS tu quan ly qua Secrets Manager."
   type        = string
-  sensitive   = true
+  default     = "dbadmin"
 }
 
-variable "db_password" {
-  description = "Database master password"
+variable "db_instance_class" {
+  description = "Loai instance cho RDS"
   type        = string
-  sensitive   = true
+  default     = "db.t3.micro"
+}
+
+variable "db_multi_az" {
+  description = "Bat Multi-AZ cho RDS. Tang gap doi chi phi."
+  type        = bool
+  default     = false
 }
 
 variable "instance_type" {

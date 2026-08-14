@@ -15,15 +15,15 @@ asg_max_size         = 4
 asg_desired_capacity = 2
 
 # Khop voi chuoi ket noi ma code Java thuc su dung.
-db_name     = "UserDB"
-db_username = "dbadmin"
+db_name           = "UserDB"
+db_username       = "dbadmin"
+db_instance_class = "db.t3.micro"
+db_multi_az       = false
 
 # Doi thanh /actuator/health o Tuan 2, sau khi app co Spring Boot Actuator.
 health_check_path = "/"
 
-# Chua khai bao o day, co y:
-#   db_password  - Task 8 go han bien nay, RDS tu quan ly mat khau qua
-#                  Secrets Manager
-#   key_name     - Task 7 go han, khong con SSH nen khong can SSH key
-#   nat_mode     - Task 10 them vao
-#   db_instance_class, db_multi_az - Task 8 them vao
+# Khong co db_password: RDS tu sinh va tu xoay vong mat khau master trong
+# Secrets Manager. Khong co key_name: khong con SSH.
+#
+# nat_mode se them o Task 10.
