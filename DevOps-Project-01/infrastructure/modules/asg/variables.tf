@@ -30,11 +30,6 @@ variable "instance_type" {
   type        = string
 }
 
-variable "key_name" {
-  description = "SSH key pair name"
-  type        = string
-}
-
 variable "min_size" {
   description = "Minimum size of ASG"
   type        = number

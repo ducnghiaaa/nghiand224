@@ -43,14 +43,14 @@ output "private_route_table_ids" {
   value       = aws_route_table.private[*].id
 }
 
-output "nat_gateway_ids" {
-  description = "List of NAT Gateway IDs"
-  value       = aws_nat_gateway.main[*].id
+output "nat_gateway_id" {
+  description = "ID cua NAT Gateway"
+  value       = aws_nat_gateway.main.id
 }
 
-output "nat_gateway_elastic_ips" {
-  description = "List of Elastic IP addresses associated with NAT Gateways"
-  value       = aws_eip.nat[*].public_ip
+output "nat_gateway_elastic_ip" {
+  description = "Dia chi Elastic IP gan voi NAT Gateway"
+  value       = aws_eip.nat.public_ip
 }
 
 output "vpc_cidr_block" {

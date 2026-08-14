@@ -46,12 +46,9 @@ resource "aws_security_group" "app" {
     security_groups = [aws_security_group.alb.id]
   }
 
-  ingress {
-    from_port       = 22
-    to_port         = 22
-    protocol        = "tcp"
-    security_groups = [aws_security_group.bastion.id]
-  }
+  # Khong co rule port 22. Truy cap may chu qua SSM Session Manager:
+  # agent tren may tu ket noi RA ngoai qua NAT Gateway, khong co ket noi
+  # nao di VAO tu Internet.
 
   egress {
     from_port   = 0
@@ -92,28 +89,11 @@ resource "aws_security_group" "db" {
   }
 }
 
-# Bastion Host Security Group
-resource "aws_security_group" "bastion" {
-  name        = "${var.environment}-bastion-sg"
-  description = "Security group for bastion host"
-  vpc_id      = var.vpc_id
-
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = var.allowed_ssh_cidr_blocks
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name        = "${var.environment}-bastion-sg"
-    Environment = var.environment
-  }
-} 
+# Khong co bastion host, va vi vay cung khong co security group cho no.
+#
+# Cau hinh truoc day khai bao mot SG bastion nhung khong he tao instance
+# nao dung no - code chet. Va rule cua no mo port 22 cho 0.0.0.0/0.
+#
+# Thay vao do: SSM Session Manager. Instance nhan IAM instance profile co
+# quyen SSM (them o Tuan 2), agent tu ket noi ra ngoai qua NAT Gateway.
+# Khong can SSH key, khong mo port 22 o dau, va moi phien deu duoc ghi log. 

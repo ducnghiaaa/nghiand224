@@ -64,11 +64,6 @@ variable "health_check_path" {
   default     = "/"
 }
 
-variable "key_name" {
-  description = "Name of the SSH key pair"
-  type        = string
-}
-
 variable "asg_min_size" {
   description = "Minimum size of the Auto Scaling Group"
   type        = number
@@ -87,8 +82,4 @@ variable "asg_desired_capacity" {
   default     = 2
 }
 
-variable "allowed_ssh_cidr_blocks" {
-  description = "List of CIDR blocks allowed to SSH to bastion host"
-  type        = list(string)
-  default     = ["0.0.0.0/0"]
-} 
+ 

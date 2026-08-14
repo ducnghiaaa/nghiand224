@@ -45,9 +45,8 @@ module "vpc" {
 module "security" {
   source = "./modules/security"
 
-  environment             = var.environment
-  vpc_id                  = module.vpc.vpc_id
-  allowed_ssh_cidr_blocks = var.allowed_ssh_cidr_blocks
+  environment = var.environment
+  vpc_id      = module.vpc.vpc_id
 }
 
 # RDS Module
@@ -84,7 +83,6 @@ module "asg" {
   security_group_ids = [module.security.app_security_group_id]
   target_group_arns  = [module.alb.target_group_arn]
   instance_type      = var.instance_type
-  key_name           = var.key_name
   min_size           = var.asg_min_size
   max_size           = var.asg_max_size
   desired_capacity   = var.asg_desired_capacity

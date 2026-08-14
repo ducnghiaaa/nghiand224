@@ -51,27 +51,30 @@ resource "aws_subnet" "private" {
 
 # Elastic IP for NAT Gateway
 resource "aws_eip" "nat" {
-  count = length(var.public_subnets)
-
   # Doi so "vpc" da bi go bo o AWS provider 5.x. Phai dung "domain".
   domain = "vpc"
 
   tags = {
-    Name        = "${var.environment}-nat-eip-${count.index + 1}"
+    Name        = "${var.environment}-nat-eip"
     Environment = var.environment
   }
 }
 
-# NAT Gateway
+# MOT NAT Gateway dung chung cho moi private subnet.
+#
+# Cau hinh truoc day tao mot cai moi public subnet, tuc gap doi chi phi.
+# Voi moi truong dev thi mot cai la du. Danh doi da biet: neu AZ chua no
+# gap su co thi private subnet o CA HAI AZ deu mat duong ra Internet.
 resource "aws_nat_gateway" "main" {
-  count         = length(var.public_subnets)
-  allocation_id = aws_eip.nat[count.index].id
-  subnet_id     = aws_subnet.public[count.index].id
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public[0].id
 
   tags = {
-    Name        = "${var.environment}-nat-${count.index + 1}"
+    Name        = "${var.environment}-nat"
     Environment = var.environment
   }
+
+  depends_on = [aws_internet_gateway.main]
 }
 
 # Public Route Table
@@ -96,7 +99,7 @@ resource "aws_route_table" "private" {
 
   route {
     cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.main[count.index].id
+    nat_gateway_id = aws_nat_gateway.main.id
   }
 
   tags = {
