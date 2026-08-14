@@ -52,7 +52,9 @@ resource "aws_subnet" "private" {
 # Elastic IP for NAT Gateway
 resource "aws_eip" "nat" {
   count = length(var.public_subnets)
-  vpc   = true
+
+  # Doi so "vpc" da bi go bo o AWS provider 5.x. Phai dung "domain".
+  domain = "vpc"
 
   tags = {
     Name        = "${var.environment}-nat-eip-${count.index + 1}"

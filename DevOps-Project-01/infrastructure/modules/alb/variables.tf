@@ -15,17 +15,13 @@ variable "public_subnets" {
   type        = list(string)
 }
 
-output "alb_arn" {
-  description = "ALB ARN"
-  value       = aws_lb.main.arn
+variable "security_group_id" {
+  description = "ID cua security group cho ALB, do module security cung cap"
+  type        = string
 }
 
-output "alb_dns_name" {
-  description = "ALB DNS name"
-  value       = aws_lb.main.dns_name
-}
-
-output "target_group_arn" {
-  description = "Target group ARN"
-  value       = aws_lb_target_group.main.arn
+variable "health_check_path" {
+  description = "Duong dan ALB dung de kiem tra suc khoe target"
+  type        = string
+  default     = "/"
 }

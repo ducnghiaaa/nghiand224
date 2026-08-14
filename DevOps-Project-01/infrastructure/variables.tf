@@ -58,6 +58,12 @@ variable "instance_type" {
   default     = "t3.micro"
 }
 
+variable "health_check_path" {
+  description = "Duong dan ALB kiem tra suc khoe. Doi thanh /actuator/health o Tuan 2 khi app co Actuator."
+  type        = string
+  default     = "/"
+}
+
 variable "key_name" {
   description = "Name of the SSH key pair"
   type        = string

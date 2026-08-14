@@ -846,9 +846,52 @@ variable "health_check_path" {
 }
 ```
 
-- [ ] **Bước 9: Sửa `aws_eip` trong `modules/vpc/main.tf`**
+- [ ] **Bước 9: Nâng provider lên 5.x TRƯỚC, rồi mới sửa `aws_eip`**
 
-Đổi `vpc = true` thành `domain = "vpc"`:
+**Thứ tự này bắt buộc.** `domain` chỉ là thuộc tính cấu hình được ở provider 5.x; ở 4.x nó là thuộc tính chỉ-đọc do AWS tự tính, nên sửa `aws_eip` trước khi nâng provider sẽ chết với:
+
+```
+Error: Value for unconfigurable attribute
+Can't configure a value for "domain": its value will be decided automatically
+```
+
+Trong `infrastructure/main.tf`, đổi khối `terraform` và `provider` (đây chính là nội dung Task 6 bước 1, phải làm ở đây):
+
+```hcl
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+
+  backend "s3" {}
+}
+
+provider "aws" {
+  region = var.aws_region
+
+  default_tags {
+    tags = {
+      Project     = "DevOps-Project-01"
+      Environment = var.environment
+      ManagedBy   = "Terraform"
+      Owner       = "nghiand224"
+    }
+  }
+}
+```
+
+Rồi ép tải lại provider — không xoá thư mục cũ thì Terraform vẫn dùng bản 4.x đã cache:
+
+```bash
+rm -rf .terraform .terraform.lock.hcl
+terraform init -backend=false
+```
+
+Sau đó mới sửa `aws_eip` trong `modules/vpc/main.tf`, đổi `vpc = true` thành `domain = "vpc"`:
 
 ```hcl
 # Elastic IP for NAT Gateway
@@ -904,43 +947,16 @@ git push origin projects/devops
 - Consumes: tên bucket và table từ Task 4
 - Produces: output ở root tên `alb_dns_name`, `rds_endpoint`, `asg_name`, `vpc_id`. Task 9 dùng để xác minh.
 
-- [ ] **Bước 1: Sửa khối `terraform` và `provider` trong `infrastructure/main.tf`**
+- [ ] **Bước 1: (đã làm ở Task 5 bước 9)**
 
-Thay 22 dòng đầu bằng:
+Khối `terraform` và `provider` đã được nâng lên `~> 5.0` kèm `default_tags` ngay ở Task 5, vì `aws_eip.domain` không hoạt động trên provider 4.x. Kiểm tra lại cho chắc:
 
-```hcl
-# Main Terraform configuration for AWS infrastructure
-
-terraform {
-  required_version = ">= 1.5.0"
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-
-  # Cau hinh backend dang partial. Gia tri thuc nam o envs/<env>/backend.hcl
-  # va duoc truyen vao bang:
-  #   terraform init -backend-config=envs/dev/backend.hcl
-  backend "s3" {}
-}
-
-provider "aws" {
-  region = var.aws_region
-
-  # Gan tag cho MOI tai nguyen ma provider nay tao ra.
-  # Nho vay loc chi phi theo Project trong Cost Explorer moi chinh xac.
-  default_tags {
-    tags = {
-      Project     = "DevOps-Project-01"
-      Environment = var.environment
-      ManagedBy   = "Terraform"
-      Owner       = "nghiand224"
-    }
-  }
-}
+```bash
+grep -A2 'source  = "hashicorp/aws"' main.tf
+terraform version | head -3
 ```
+
+Kỳ vọng: `version = "~> 5.0"` và provider đang dùng là `v5.x`.
 
 - [ ] **Bước 2: Đổi mặc định region và AZ trong `infrastructure/variables.tf`**
 
