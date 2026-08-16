@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kiến trúc 3 tầng — DevOps Project 01</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-accent:  #eb6c36;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1200px; width: 100%; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Architecture · ap-southeast-1</p>
+    <h1>Kiến trúc 3 tầng — DevOps Project 01</h1>
+
+    <svg viewBox="0 0 960 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="aws-3tier-title aws-3tier-desc">
+      <title id="aws-3tier-title">Kiến trúc 3 tầng trên AWS</title>
+      <desc id="aws-3tier-desc">Ứng dụng Java trên AWS: người dùng đi qua Application Load Balancer ở public subnet tới nhóm EC2 chạy Tomcat trong private subnet, rồi tới RDS MySQL. Máy chủ lấy mật khẩu database từ Secrets Manager và ra Internet qua một NAT Gateway dùng chung. Quản trị viên truy cập qua SSM Session Manager, không có bastion và không mở cổng SSH.</desc>
+
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+      <!-- ============ ZONES (drawn first) ============ -->
+
+      <!-- VPC trust boundary — dashed -->
+      <rect x="144" y="116" width="544" height="376" rx="8"
+            fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.22)" stroke-width="0.8" stroke-dasharray="4,4"/>
+      <rect x="160" y="120" width="112" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="216" y="129" fill="rgba(45,49,66,0.40)" font-size="7"
+            font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">VPC 192.168.0.0/16</text>
+
+      <!-- Public subnet -->
+      <rect x="160" y="148" width="208" height="324" rx="8"
+            fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <rect x="176" y="152" width="112" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="232" y="161" fill="rgba(45,49,66,0.40)" font-size="7"
+            font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">PUBLIC SUBNET · 2 AZ</text>
+
+      <!-- Private subnet -->
+      <rect x="416" y="148" width="256" height="324" rx="8"
+            fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <rect x="432" y="152" width="120" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="492" y="161" fill="rgba(45,49,66,0.40)" font-size="7"
+            font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">PRIVATE SUBNET · 2 AZ</text>
+
+      <!-- ============ ARROWS (before boxes) ============ -->
+
+      <!-- 1. Internet -> ALB -->
+      <line x1="112" y1="216" x2="172" y2="216" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="120" y="196" width="48" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="144" y="205" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">HTTP :80</text>
+
+      <!-- 2. ALB -> EC2 -->
+      <line x1="352" y1="216" x2="428" y2="216" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="364" y="196" width="56" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="392" y="205" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">HTTP :8080</text>
+
+      <!-- 3. EC2 -> RDS (focal flow) -->
+      <line x1="544" y1="252" x2="544" y2="380" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+      <rect x="556" y="304" width="68" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="590" y="313" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MYSQL :3306</text>
+
+      <!-- 4. EC2 -> NAT (outbound) -->
+      <path d="M 432,232 H 400 Q 392,232 392,240 V 412 Q 392,420 384,420 H 356"
+            fill="none" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+
+      <!-- 5. NAT -> Internet -->
+      <path d="M 176,420 H 72 Q 64,420 64,412 V 256"
+            fill="none" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+      <rect x="92" y="400" width="56" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="120" y="409" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">EGRESS</text>
+
+      <!-- 6. EC2 -> Secrets Manager -->
+      <path d="M 656,216 H 724" fill="none" stroke="#eb6c36" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-accent)"/>
+      <rect x="660" y="196" width="64" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="692" y="205" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">GET SECRET</text>
+
+      <!-- 7. SSM -> EC2 (admin path) -->
+      <path d="M 776,384 V 348 Q 776,340 768,340 H 632 Q 624,340 624,332 V 256"
+            fill="none" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+      <rect x="664" y="320" width="56" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="692" y="329" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SESSION</text>
+
+      <!-- ============ NODES ============ -->
+
+      <!-- Internet -->
+      <rect x="16" y="180" width="96" height="72" rx="6" fill="#f5f5f5"/>
+      <rect x="16" y="180" width="96" height="72" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+      <rect x="24" y="186" width="28" height="12" rx="2" fill="transparent" stroke="rgba(122,131,153,0.40)" stroke-width="0.8"/>
+      <text x="38" y="195" fill="rgba(122,131,153,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">WWW</text>
+      <text x="64" y="218" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Internet</text>
+      <text x="64" y="234" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">users</text>
+
+      <!-- ALB -->
+      <rect x="176" y="180" width="176" height="72" rx="6" fill="#f5f5f5"/>
+      <rect x="176" y="180" width="176" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="184" y="186" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="198" y="195" fill="rgba(45,49,66,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ALB</text>
+      <text x="264" y="218" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Load Balancer</text>
+      <text x="264" y="234" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">internet-facing</text>
+
+      <!-- EC2 / ASG -->
+      <rect x="432" y="180" width="224" height="72" rx="6" fill="#f5f5f5"/>
+      <rect x="432" y="180" width="224" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="440" y="186" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="454" y="195" fill="rgba(45,49,66,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ASG</text>
+      <text x="544" y="218" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">EC2 · Tomcat 9</text>
+      <text x="544" y="234" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">2 × t3.micro · 2 AZ</text>
+
+      <!-- Secrets Manager (FOCAL) -->
+      <rect x="728" y="180" width="200" height="72" rx="6" fill="#f5f5f5"/>
+      <rect x="728" y="180" width="200" height="72" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+      <rect x="736" y="186" width="28" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.40)" stroke-width="0.8"/>
+      <text x="750" y="195" fill="rgba(235,108,54,0.90)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SM</text>
+      <text x="828" y="218" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Secrets Manager</text>
+      <text x="828" y="234" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">auto-rotated</text>
+
+      <!-- NAT Gateway -->
+      <rect x="176" y="384" width="176" height="72" rx="6" fill="#f5f5f5"/>
+      <rect x="176" y="384" width="176" height="72" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <rect x="184" y="390" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
+      <text x="198" y="399" fill="rgba(45,49,66,0.70)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">NAT</text>
+      <text x="264" y="422" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">NAT Gateway</text>
+      <text x="264" y="438" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">one, shared</text>
+
+      <!-- RDS (FOCAL) -->
+      <rect x="432" y="384" width="224" height="72" rx="6" fill="#f5f5f5"/>
+      <rect x="432" y="384" width="224" height="72" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+      <rect x="440" y="390" width="28" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.40)" stroke-width="0.8"/>
+      <text x="454" y="399" fill="rgba(235,108,54,0.90)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">RDS</text>
+      <text x="544" y="422" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">MySQL 8.0</text>
+      <text x="544" y="438" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">db.t3.micro · single-AZ</text>
+
+      <!-- SSM Session Manager -->
+      <rect x="728" y="384" width="200" height="72" rx="6" fill="#f5f5f5"/>
+      <rect x="728" y="384" width="200" height="72" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      <rect x="736" y="390" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.25)" stroke-width="0.8"/>
+      <text x="750" y="399" fill="rgba(45,49,66,0.60)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SSM</text>
+      <text x="828" y="422" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Session Manager</text>
+      <text x="828" y="438" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">no SSH · no bastion</text>
+
+      <!-- ============ LEGEND ============ -->
+      <line x1="32" y1="536" x2="928" y2="536" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <text x="32" y="556" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+
+      <line x1="120" y1="552" x2="152" y2="552" stroke="#4f5d75" stroke-width="1.2"/>
+      <text x="160" y="556" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">APP TRAFFIC</text>
+
+      <line x1="320" y1="552" x2="352" y2="552" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="360" y="556" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">MANAGEMENT / EGRESS</text>
+
+      <rect x="600" y="546" width="12" height="12" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+      <text x="620" y="556" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">NO SECRET IN CODE OR STATE</text>
+    </svg>
+  </div>
+</body>
+</html>

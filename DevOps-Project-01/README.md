@@ -7,6 +7,8 @@ hoàn toàn tự động bằng Terraform, Packer và GitHub Actions.
 
 ## Kiến trúc
 
+![Kiến trúc 3 tầng trên AWS](docs/architecture.png)
+
 Ba tầng, mỗi tầng một ranh giới bảo mật:
 
 | Tầng | Thành phần | Vị trí mạng |
@@ -15,7 +17,16 @@ Ba tầng, mỗi tầng một ranh giới bảo mật:
 | Application | EC2 trong Auto Scaling Group, Tomcat 9 | Private subnet, 2 AZ |
 | Data | RDS MySQL 8.0 | Private subnet, 2 AZ |
 
-🚧 *Sơ đồ kiến trúc sẽ bổ sung ở Tuần 5*
+Đường duy nhất đi vào từ Internet là ALB. Không có bastion host, không có
+security group nào mở port 22. Máy chủ đi ra ngoài qua một NAT Gateway dùng
+chung, và quản trị viên vào máy qua SSM Session Manager.
+
+Hai khối màu cam đánh dấu quyết định thiết kế đáng kể nhất: mật khẩu
+database do RDS tự sinh và tự xoay vòng trong Secrets Manager, nên không tồn
+tại trong source code lẫn trong Terraform state.
+
+*Nguồn sơ đồ: [`docs/architecture.html`](docs/architecture.html) — mở bằng
+trình duyệt để xem bản vector.*
 
 ## Quyết định thiết kế
 
