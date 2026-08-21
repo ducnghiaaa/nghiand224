@@ -33,8 +33,9 @@ resource "aws_db_instance" "main" {
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = var.security_group_ids
 
-  backup_retention_period = 7
-  backup_window           = "03:00-04:00"
+  # Ha tang bi destroy sau moi buoi lam viec nen khong can backup,
+  # va gioi han Free Tier tu choi backup_retention_period > 0 tren tai khoan nay.
+  backup_retention_period = 0
   maintenance_window      = "sun:04:00-sun:05:00"
 
   skip_final_snapshot       = true

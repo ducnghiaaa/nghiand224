@@ -65,6 +65,21 @@ Chi phí khi hạ tầng đang chạy, giá ap-southeast-1:
 Hạ tầng được `destroy` sau mỗi buổi làm việc, nên chi phí thực tế khoảng
 $5/tháng. 🚧 *Số đo thật từ Cost Explorer sẽ bổ sung ở Tuần 5*
 
+## Bằng chứng vận hành
+
+`terraform apply` đã chạy thật trên tài khoản AWS cá nhân (region ap-southeast-1),
+tạo đủ 33 resource rồi `destroy` sạch ngay sau khi thu bằng chứng — không có gì
+chạy 24/7.
+
+| | |
+| --- | --- |
+| ![VPC Resource Map](docs/evidence/01-vpc-resource-map.png) | ![ASG 2 instance trên 2 AZ](docs/evidence/02-asg-instances-multi-az.png) |
+| VPC với 4 subnet trên 2 AZ, 1 NAT Gateway dùng chung | Auto Scaling Group duy trì 2 instance `Healthy`, mỗi instance một AZ khác nhau |
+
+Trong lúc apply, tôi phát hiện tài khoản đang ở Free Tier từ chối
+`backup_retention_period = 7` trên RDS (`FreeTierRestrictionError`) — đã sửa về
+`0` vì hạ tầng này bị destroy sau mỗi buổi làm việc nên không cần backup.
+
 ## Cách chạy
 
 🚧 *Sẽ bổ sung ở Tuần 1*
