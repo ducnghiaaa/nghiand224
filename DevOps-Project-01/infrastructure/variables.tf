@@ -65,9 +65,9 @@ variable "instance_type" {
 }
 
 variable "health_check_path" {
-  description = "Duong dan ALB kiem tra suc khoe. Doi thanh /actuator/health o Tuan 2 khi app co Actuator."
+  description = "Duong dan ALB kiem tra suc khoe. App da co Spring Boot Actuator tu Tuan 2."
   type        = string
-  default     = "/"
+  default     = "/actuator/health"
 }
 
 variable "asg_min_size" {

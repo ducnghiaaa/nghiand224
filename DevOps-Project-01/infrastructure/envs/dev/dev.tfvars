@@ -20,8 +20,7 @@ db_username       = "dbadmin"
 db_instance_class = "db.t3.micro"
 db_multi_az       = false
 
-# Doi thanh /actuator/health o Tuan 2, sau khi app co Spring Boot Actuator.
-health_check_path = "/"
+health_check_path = "/actuator/health"
 
 # Khong co db_password: RDS tu sinh va tu xoay vong mat khau master trong
 # Secrets Manager. Khong co key_name: khong con SSH.
