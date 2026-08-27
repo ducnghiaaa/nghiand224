@@ -46,9 +46,12 @@ Logs, tổng còn cao hơn nữa.
 Manager. Không có biến `db_password` trong Terraform, không có mật khẩu trong
 state file, không có gì trong repo.
 
-**Biến `nat_mode`.** Cùng một cấu hình chạy được với NAT Gateway (được quản lý
-sẵn) hoặc NAT instance `t4g.nano` (rẻ hơn khoảng 10 lần). 🚧 *Bảng so sánh chi
-phí đo thật sẽ bổ sung ở Tuần 5*
+**Biến `nat_mode`.** Cùng một cấu hình chạy được với `nat_mode = "gateway"`
+(NAT Gateway được AWS quản lý sẵn) hoặc `nat_mode = "instance"` (EC2
+`t4g.nano` tự cấu hình `iptables MASQUERADE`, rẻ hơn ~7 lần). Đánh đổi: NAT
+instance là single point of failure và phải tự vá lỗi hệ điều hành, NAT
+Gateway thì không. 🚧 *Bảng so sánh chi phí đo thật từ Cost Explorer sẽ bổ
+sung ở Tuần 5*
 
 ## Chi phí
 

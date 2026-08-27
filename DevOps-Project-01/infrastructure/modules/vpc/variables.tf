@@ -21,4 +21,10 @@ variable "private_subnets" {
 variable "azs" {
   description = "List of availability zones"
   type        = list(string)
+}
+
+variable "nat_mode" {
+  description = "NAT mode for the VPC"
+  default     = "gateway"
+  type        = string
 } 

@@ -45,12 +45,12 @@ output "private_route_table_ids" {
 
 output "nat_gateway_id" {
   description = "ID cua NAT Gateway"
-  value       = aws_nat_gateway.main.id
+  value       = var.nat_mode == "gateway" ? aws_nat_gateway.main[0].id : null
 }
 
 output "nat_gateway_elastic_ip" {
   description = "Dia chi Elastic IP gan voi NAT Gateway"
-  value       = aws_eip.nat.public_ip
+  value       = var.nat_mode == "gateway" ? aws_eip.nat[0].public_ip : null
 }
 
 output "vpc_cidr_block" {

@@ -88,4 +88,10 @@ variable "asg_desired_capacity" {
   default     = 2
 }
 
+variable "nat_mode" {
+  description = "NAT mode for the VPC"
+  default     = "gateway"
+  type        = string
+}
+
  

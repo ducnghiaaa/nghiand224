@@ -39,6 +39,7 @@ module "vpc" {
   public_subnets  = var.public_subnets
   private_subnets = var.private_subnets
   azs             = var.availability_zones
+  nat_mode        = var.nat_mode
 }
 
 # Security Module
