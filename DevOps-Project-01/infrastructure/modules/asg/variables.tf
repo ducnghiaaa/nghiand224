@@ -44,3 +44,8 @@ variable "desired_capacity" {
   description = "Desired capacity of ASG"
   type        = number
 }
+
+variable "iam_instance_profile_name" {
+  description = "Ten IAM Instance Profile gan vao EC2"
+  type        = string
+}

@@ -64,6 +64,14 @@ module "rds" {
   multi_az           = var.db_multi_az
 }
 
+# IAM Module
+module "iam" {
+  source = "./modules/iam"
+
+  environment = var.environment
+  secret_arn  = module.rds.master_user_secret_arn
+}
+
 # Application Load Balancer Module
 module "alb" {
   source = "./modules/alb"
@@ -88,6 +96,8 @@ module "asg" {
   min_size           = var.asg_min_size
   max_size           = var.asg_max_size
   desired_capacity   = var.asg_desired_capacity
+
+  iam_instance_profile_name = module.iam.instance_profile_name
 }
 
 # CloudWatch Module

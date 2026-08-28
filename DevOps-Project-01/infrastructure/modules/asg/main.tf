@@ -24,6 +24,11 @@ resource "aws_launch_template" "main" {
 
   vpc_security_group_ids = var.security_group_ids
 
+  iam_instance_profile {
+    name = var.iam_instance_profile_name
+  }
+
+
   # Khong cai gi luc khoi dong.
   #
   # user_data cu chay "yum install tomcat" nhung khong he deploy file WAR
